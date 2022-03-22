@@ -2,7 +2,6 @@ from minidump_enums import *
 from writer import minidump_provider, minidump_writer
 import windows
 import sys
-import pdb
 
 class windows_writer(minidump_provider, minidump_writer):
 	def __init__(self, file, pid=0, *args, **kwargs):
@@ -67,7 +66,6 @@ class windows_writer(minidump_provider, minidump_writer):
 			return b"\x00" * size
 
 def main():
-	import pdb; pdb.set_trace()
 	pid = int(sys.argv[1])
 	with open(f"windows_writer_{pid}.dmp", "wb+") as f:
 		test_writer = windows_writer(f, pid=pid)
