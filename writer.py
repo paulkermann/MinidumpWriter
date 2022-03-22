@@ -14,7 +14,6 @@ class minidump_provider(ABC):
 		get generic system information
 		"""
 
-	@abstractmethod
 	def get_modules(self):
 		"""
 		get module information as an array of
@@ -24,7 +23,8 @@ class minidump_provider(ABC):
 		ModuleName
 		"""
 
-	@abstractmethod
+		return []
+
 	def get_threads(self):
 		"""
 		TODO: add support for get thread context
@@ -35,12 +35,13 @@ class minidump_provider(ABC):
 					Teb
 		}
 		"""
+		return {}
 
-	@abstractmethod
 	def get_memory_descriptors(self):
 		"""
 		get (range_start, range_start) array of valid memory in the dump
 		"""
+		return []
 
 	@abstractmethod
 	def get_bytes(self, address, size):
@@ -53,6 +54,7 @@ class minidump_writer:
 	def __init__(self, file):
 		self._file = file
 
+		self.bitness = 32
 		# TODO: support more streams types: MemoryInfoListStream
 		# translators translate results to the MINIDUMP format struct
 		self.stream_to_handler = OrderedDict()
@@ -67,8 +69,10 @@ class minidump_writer:
 	def get_system_info_translator(self, system_info):
 		allocated_system_info_rva = self._alloc(minidump_strcuts.MINIDUMP_SYSTEM_INFO.size())
 		system_info_struct = minidump_strcuts.MINIDUMP_SYSTEM_INFO(allocated_system_info_rva, self._file)
-
 		system_info_struct.ProcessorArchitecture = system_info["ProcessorArchitecture"]
+		if system_info_struct.ProcessorArchitecture in [ProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64, ProcessorArchitecture.PROCESSOR_ARCHITECTURE_IA64]:
+			self.bitness = 64
+
 		system_info_struct.ProcessorLevel = system_info["ProcessorLevel"]
 		system_info_struct.ProcessorRevision = system_info["ProcessorRevision"]
 		system_info_struct.MajorVersion = system_info["MajorVersion"]

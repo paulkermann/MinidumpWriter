@@ -52,9 +52,16 @@ class windows_writer(minidump_provider, minidump_writer):
 		memory_descriptors_arr = []
 
 		for basic_info in self.process.memory_state():
-			if basic_info.State & 0x10000 == 0x10000:
-				continue
+			to_skip = False
+			skip_states = [0x2000, 0x10000] # skip free and reserved
+			for skip_state in skip_states:
+				if basic_info.State & skip_state == skip_state:
+					to_skip = True
+					break
 
+			if to_skip:
+				continue
+			
 			memory_descriptors_arr.append((basic_info.BaseAddress, basic_info.RegionSize))
 
 		return memory_descriptors_arr
