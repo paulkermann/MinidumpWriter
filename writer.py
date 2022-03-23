@@ -21,6 +21,7 @@ class minidump_provider(ABC):
 		BaseOfImage
 		SizeOfImage
 		ModuleName
+		TimeDateStamp - Optional
 		"""
 
 		return []
@@ -30,9 +31,9 @@ class minidump_provider(ABC):
 		TODO: add support for get thread context
 		get thread information as a dict of thread_id and members
 
-		ThreadId :{ PriorityClass
-					Priority
-					Teb
+		ThreadId :{ PriorityClass - Optional
+					Priority - Optional
+					Teb - Optional
 		}
 		"""
 		return {}
@@ -103,9 +104,9 @@ class minidump_writer:
 			thread_info = threads[thread_id]
 
 			thread_struct.ThreadId = thread_id
-			thread_struct.PriorityClass = thread_info["PriorityClass"]
-			thread_struct.Priority = thread_info["Priority"]
-			thread_struct.Teb = thread_info["Teb"]
+			thread_struct.PriorityClass = thread_info.get("PriorityClass", 0)
+			thread_struct.Priority = thread_info.get("Priority", 0)
+			thread_struct.Teb = thread_info.get("Teb", 0)
 
 			thread_struct.write()
 
@@ -129,6 +130,7 @@ class minidump_writer:
 
 			module_struct.BaseOfImage = module["BaseOfImage"]
 			module_struct.SizeOfImage = module["SizeOfImage"]
+			module_struct.TimeDateStamp = module.get("TimeDateStamp", 0)
 			module_struct.ModuleNameRva = self._alloc_minidump_string(module["ModuleName"])
 
 			module_struct.write()

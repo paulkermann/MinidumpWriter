@@ -43,7 +43,6 @@ class windows_writer(minidump_provider, minidump_writer):
 			thread_info = {}
 			thread_info["Teb"] = thread.teb_base
 			thread_info["Priority"] = 0
-			thread_info["PriorityClass"] = 0
 			threads[thread.tid] = thread_info
 
 		return threads
