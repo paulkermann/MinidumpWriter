@@ -79,10 +79,11 @@ def _context_from_provider_context(context, arch):
 	return context_struct
 
 class minidump_writer:
-	def __init__(self, file):
+	def __init__(self, file, chunk_size=0x10000):
 		self._file = file
 
 		self.bitness = 32
+		self.chunk_size = chunk_size
 		# TODO: support more streams types: MemoryInfoListStream
 		# translators translate results to the MINIDUMP format struct
 		self.stream_to_handler = OrderedDict()
@@ -214,12 +215,22 @@ class minidump_writer:
 		memory64_list_struct = minidump_strcuts.MINIDUMP_MEMORY64_LIST(directory.Location.Rva, self._file, True)
 		current_memory_rva = memory64_list_struct.BaseRva
 		for range_start, range_size in memory_descriptors:
-			buffer = self.get_bytes(range_start, range_size)
-			assert len(buffer) == range_size
-
-			self._file.seek(current_memory_rva)
-			self._file.write(buffer)
+			self._get_bytes_wrapper(range_start, range_size, current_memory_rva)
 			current_memory_rva += range_size
+			
+	def _get_bytes_wrapper(self, range_start, range_size, disk_rva):
+		bytes_written = 0
+		while bytes_written < range_size:
+			amount_bytes_to_read = min(self.chunk_size, range_size - bytes_written)
+			buffer = self.get_bytes(range_start + bytes_written, amount_bytes_to_read)
+
+			self._file.seek(disk_rva)
+			self._file.write(buffer)
+
+			disk_rva += len(buffer)
+			bytes_written += len(buffer)
+
+		assert bytes_written == range_size
 
 	def write(self):
 		self.write_header()
@@ -253,7 +264,8 @@ class minidump_writer:
 	def _alloc(self, amount):
 		self._file.seek(0, 2)
 		current_position = self._file.tell()
-		self._file.write(b"\x00" * amount)
+		self._file.seek(amount - 1, 1)
+		self._file.write(b"\x00")
 
 		return current_position
 

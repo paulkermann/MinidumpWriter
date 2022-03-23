@@ -6,7 +6,7 @@ import sys
 class windows_writer(minidump_provider, minidump_writer):
 	def __init__(self, file, pid=0, *args, **kwargs):
 		self.process = windows.winobject.process.WinProcess(pid=pid)
-		super().__init__(file, )
+		super().__init__(file, *args, **kwargs)
 
 	def get_system_info(self):
 		to_return = {}
