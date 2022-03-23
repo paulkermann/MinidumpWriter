@@ -213,10 +213,10 @@ class minidump_writer:
 
 	def memory_fetcher(self, memory_descriptors, directory):
 		memory64_list_struct = minidump_strcuts.MINIDUMP_MEMORY64_LIST(directory.Location.Rva, self._file, True)
-		current_memory_rva = memory64_list_struct.BaseRva
+		current_disk_rva = memory64_list_struct.BaseRva
 		for range_start, range_size in memory_descriptors:
-			self._get_bytes_wrapper(range_start, range_size, current_memory_rva)
-			current_memory_rva += range_size
+			self._get_bytes_wrapper(range_start, range_size, current_disk_rva)
+			current_disk_rva += range_size
 			
 	def _get_bytes_wrapper(self, range_start, range_size, disk_rva):
 		bytes_written = 0
