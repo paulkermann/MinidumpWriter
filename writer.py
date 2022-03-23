@@ -5,6 +5,8 @@ import pdb
 
 from minidump_enums import *
 import minidump_strcuts
+import logging
+
 
 class minidump_provider(ABC):
 	"""
@@ -53,6 +55,28 @@ class minidump_provider(ABC):
 		reads addresses that were received from `get_memory_descriptors`
 		"""
 
+def _context_from_provider_context(context, arch):
+	if context is None:
+		return None
+
+	arch_to_context = {
+		ProcessorArchitecture.PROCESSOR_ARCHITECTURE_INTEL.value: minidump_strcuts.CONTEXT32,
+		ProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64.value: minidump_strcuts.CONTEXT64
+	}
+
+	context_struct_class = arch_to_context.get(arch, None)
+	if context_struct_class is None:
+		logging.warning(f"Context object for {arch} is not defined")
+
+		return None
+
+	context_struct = context_struct_class()
+	for field in context_struct._fields_:
+		field_name = field[0]
+		if field_name in context:
+			setattr(context_struct, field_name, context[field_name])
+
+	return context_struct
 
 class minidump_writer:
 	def __init__(self, file):
@@ -111,6 +135,14 @@ class minidump_writer:
 			thread_struct.PriorityClass = thread_info.get("PriorityClass", 0)
 			thread_struct.Priority = thread_info.get("Priority", 0)
 			thread_struct.Teb = thread_info.get("Teb", 0)
+
+			thread_context = thread_info.get("Context", {})
+			thread_context_struct = _context_from_provider_context(thread_context, self.arch)
+			if thread_context_struct is not None:
+				context_bytes = bytes(thread_context_struct)
+				context_location_rva = self._alloc_buffer(context_bytes)
+				thread_struct.ThreadContext.Rva = context_location_rva
+				thread_struct.ThreadContext.DataSize = len(context_bytes)
 
 			thread_struct.write()
 

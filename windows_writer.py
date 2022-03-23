@@ -43,6 +43,20 @@ class windows_writer(minidump_provider, minidump_writer):
 			thread_info = {}
 			thread_info["Teb"] = thread.teb_base
 			thread_info["Priority"] = 0
+
+			context = {}
+			thread_context = thread.context
+			if hasattr(thread_context, "Rip"):
+				context["Rip"] = thread_context.Rip
+				context["Rsp"] = thread_context.Rsp
+				context["Rbp"] = thread_context.Rbp
+			else:
+				context["Eip"] = thread_context.Eip
+				context["Esp"] = thread_context.Esp
+				context["Ebp"] = thread_context.Ebp
+
+			thread_info["Context"] = context
+
 			threads[thread.tid] = thread_info
 
 		return threads
