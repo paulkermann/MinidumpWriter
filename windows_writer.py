@@ -35,6 +35,14 @@ class windows_writer(minidump_provider, minidump_writer):
 			current_module["ModuleName"] = module.FullDllName.str
 			list_of_modules.append(current_module)
 
+		if hasattr(self.process, "peb_syswow"):
+			for module in self.process.peb_syswow.modules:
+				current_module = {}
+				current_module["BaseOfImage"] = module.DllBase
+				current_module["SizeOfImage"] = module.SizeOfImage
+				current_module["ModuleName"] = module.FullDllName.str
+				list_of_modules.append(current_module)
+
 		return list_of_modules
 
 	def get_threads(self):
@@ -46,6 +54,9 @@ class windows_writer(minidump_provider, minidump_writer):
 
 			context = {}
 			thread_context = thread.context
+			if hasattr(thread, "context_syswow"):
+				thread_context = thread.context_syswow
+
 			if hasattr(thread_context, "Rip"):
 				context["Rip"] = thread_context.Rip
 				context["Rsp"] = thread_context.Rsp
