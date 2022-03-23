@@ -7,7 +7,10 @@ from minidump_enums import *
 import minidump_strcuts
 
 class minidump_provider(ABC):
+	"""
+	after header is written self.bitness will contain system bitness and self.arch will contain ProcessorArchitecture
 
+	"""
 	@abstractmethod
 	def get_system_info(self):
 		"""
@@ -71,6 +74,7 @@ class minidump_writer:
 		allocated_system_info_rva = self._alloc(minidump_strcuts.MINIDUMP_SYSTEM_INFO.size())
 		system_info_struct = minidump_strcuts.MINIDUMP_SYSTEM_INFO(allocated_system_info_rva, self._file)
 		system_info_struct.ProcessorArchitecture = system_info["ProcessorArchitecture"]
+		self.arch = system_info_struct.ProcessorArchitecture
 		if system_info_struct.ProcessorArchitecture in [ProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64, ProcessorArchitecture.PROCESSOR_ARCHITECTURE_IA64]:
 			self.bitness = 64
 
