@@ -1,5 +1,5 @@
 from minidump_enums import *
-from writer import minidump_provider, minidump_writer
+from minidump_writer import minidump_provider, minidump_writer
 import windows
 import sys
 
