@@ -1,5 +1,5 @@
 from minidump_enums import *
-from writer import minidump_provider, minidump_writer
+from minidump_writer import minidump_provider, minidump_writer
 
 class dummy_writer(minidump_provider, minidump_writer):
 	def __init__(self, *args, **kwargs):

@@ -4,7 +4,7 @@ import time
 import pdb
 
 from minidump_enums import *
-import minidump_strcuts
+from minidump_structs import *
 import logging
 
 
@@ -60,8 +60,8 @@ def _context_from_provider_context(context, arch):
 		return None
 
 	arch_to_context = {
-		ProcessorArchitecture.PROCESSOR_ARCHITECTURE_INTEL.value: minidump_strcuts.CONTEXT32,
-		ProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64.value: minidump_strcuts.CONTEXT64
+		ProcessorArchitecture.PROCESSOR_ARCHITECTURE_INTEL.value: CONTEXT32,
+		ProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64.value: CONTEXT64
 	}
 
 	context_struct_class = arch_to_context.get(arch, None)
@@ -96,8 +96,8 @@ class minidump_writer:
 		
 
 	def get_system_info_translator(self, system_info):
-		allocated_system_info_rva = self._alloc(minidump_strcuts.MINIDUMP_SYSTEM_INFO.size())
-		system_info_struct = minidump_strcuts.MINIDUMP_SYSTEM_INFO(allocated_system_info_rva, self._file)
+		allocated_system_info_rva = self._alloc(MINIDUMP_SYSTEM_INFO.size())
+		system_info_struct = MINIDUMP_SYSTEM_INFO(allocated_system_info_rva, self._file)
 		system_info_struct.ProcessorArchitecture = system_info["ProcessorArchitecture"]
 		self.arch = system_info_struct.ProcessorArchitecture
 		if system_info_struct.ProcessorArchitecture in [ProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64, ProcessorArchitecture.PROCESSOR_ARCHITECTURE_IA64]:
@@ -113,23 +113,23 @@ class minidump_writer:
 		system_info_struct.PlatformId = system_info["PlatformId"]
 		system_info_struct.write()
 
-		location = minidump_strcuts.MINIDUMP_LOCATION_DESCRIPTOR()
+		location = MINIDUMP_LOCATION_DESCRIPTOR()
 		location.DataSize = system_info_struct.size()
 		location.Rva = allocated_system_info_rva
 
 		return location
 
 	def get_threads_translator(self, threads):
-		size_needed_for_info = minidump_strcuts.MINIDUMP_THREAD_LIST.size() + (minidump_strcuts.MINIDUMP_THREAD.size() * len(threads.keys()))
+		size_needed_for_info = MINIDUMP_THREAD_LIST.size() + (MINIDUMP_THREAD.size() * len(threads.keys()))
 		thread_info_location = self._alloc(size_needed_for_info)
 		
-		thread_list_struct = minidump_strcuts.MINIDUMP_THREAD_LIST(thread_info_location, self._file)
+		thread_list_struct = MINIDUMP_THREAD_LIST(thread_info_location, self._file)
 		thread_list_struct.NumberOfThreads = len(threads.keys())
 		thread_list_struct.write()
 
 		for thread_index, thread_id in enumerate(threads):
-			thread_struct_location = thread_info_location + minidump_strcuts.MINIDUMP_THREAD_LIST.size() + (thread_index * minidump_strcuts.MINIDUMP_THREAD.size())
-			thread_struct = minidump_strcuts.MINIDUMP_THREAD(thread_struct_location, self._file)
+			thread_struct_location = thread_info_location + MINIDUMP_THREAD_LIST.size() + (thread_index * MINIDUMP_THREAD.size())
+			thread_struct = MINIDUMP_THREAD(thread_struct_location, self._file)
 			thread_info = threads[thread_id]
 
 			thread_struct.ThreadId = thread_id
@@ -147,7 +147,7 @@ class minidump_writer:
 
 			thread_struct.write()
 
-		location = minidump_strcuts.MINIDUMP_LOCATION_DESCRIPTOR()
+		location = MINIDUMP_LOCATION_DESCRIPTOR()
 		location.DataSize = size_needed_for_info
 		location.Rva = thread_info_location
 
@@ -155,15 +155,15 @@ class minidump_writer:
 
 	def get_modules_translator(self, modules):
 		amount_of_modules = len(modules)
-		size_needed_for_info = minidump_strcuts.MINIDUMP_MODULE_LIST.size() + (minidump_strcuts.MINIDUMP_MODULE.size() * amount_of_modules)
+		size_needed_for_info = MINIDUMP_MODULE_LIST.size() + (MINIDUMP_MODULE.size() * amount_of_modules)
 		minidump_module_list_location = self._alloc(size_needed_for_info)
-		module_list_struct = minidump_strcuts.MINIDUMP_MODULE_LIST(minidump_module_list_location, self._file)
+		module_list_struct = MINIDUMP_MODULE_LIST(minidump_module_list_location, self._file)
 		module_list_struct.NumberOfModules = amount_of_modules
 		module_list_struct.write()
 
 		for module_index, module in enumerate(modules):
-			module_struct_location = minidump_module_list_location + minidump_strcuts.MINIDUMP_MODULE_LIST.size() + (module_index * minidump_strcuts.MINIDUMP_MODULE.size())
-			module_struct = minidump_strcuts.MINIDUMP_MODULE(module_struct_location, self._file)
+			module_struct_location = minidump_module_list_location + MINIDUMP_MODULE_LIST.size() + (module_index * MINIDUMP_MODULE.size())
+			module_struct = MINIDUMP_MODULE(module_struct_location, self._file)
 
 			module_struct.BaseOfImage = module["BaseOfImage"]
 			module_struct.SizeOfImage = module["SizeOfImage"]
@@ -173,7 +173,7 @@ class minidump_writer:
 			module_struct.write()
 
 
-		location = minidump_strcuts.MINIDUMP_LOCATION_DESCRIPTOR()
+		location = MINIDUMP_LOCATION_DESCRIPTOR()
 		location.DataSize = size_needed_for_info
 		location.Rva = minidump_module_list_location
 
@@ -182,16 +182,16 @@ class minidump_writer:
 	def get_memory_descriptors_translator(self, memory_descriptors):
 		number_of_ranges = len(memory_descriptors)
 
-		size_needed_for_info = minidump_strcuts.MINIDUMP_MEMORY64_LIST.size() + (number_of_ranges * minidump_strcuts.MINIDUMP_MEMORY_DESCRIPTOR64.size())
+		size_needed_for_info = MINIDUMP_MEMORY64_LIST.size() + (number_of_ranges * MINIDUMP_MEMORY_DESCRIPTOR64.size())
 		memory_list_location = self._alloc(size_needed_for_info)
-		memory64_list_struct = minidump_strcuts.MINIDUMP_MEMORY64_LIST(memory_list_location, self._file)
+		memory64_list_struct = MINIDUMP_MEMORY64_LIST(memory_list_location, self._file)
 		memory64_list_struct.NumberOfMemoryRanges = number_of_ranges
 
 		total_size_for_memory = 0
 
 		for range_index, descriptor in enumerate(memory_descriptors):
-			descriptor_location = memory_list_location + minidump_strcuts.MINIDUMP_MEMORY64_LIST.size() + (range_index * minidump_strcuts.MINIDUMP_MEMORY_DESCRIPTOR64.size())
-			descriptor_struct = minidump_strcuts.MINIDUMP_MEMORY_DESCRIPTOR64(descriptor_location, self._file)
+			descriptor_location = memory_list_location + MINIDUMP_MEMORY64_LIST.size() + (range_index * MINIDUMP_MEMORY_DESCRIPTOR64.size())
+			descriptor_struct = MINIDUMP_MEMORY_DESCRIPTOR64(descriptor_location, self._file)
 
 			range_start, range_size = descriptor
 			total_size_for_memory += range_size
@@ -205,14 +205,14 @@ class minidump_writer:
 		memory64_list_struct.BaseRva = self._alloc(total_size_for_memory)
 		memory64_list_struct.write()
 
-		location = minidump_strcuts.MINIDUMP_LOCATION_DESCRIPTOR()
+		location = MINIDUMP_LOCATION_DESCRIPTOR()
 		location.DataSize = size_needed_for_info
 		location.Rva = memory_list_location
 
 		return location
 
 	def memory_fetcher(self, memory_descriptors, directory):
-		memory64_list_struct = minidump_strcuts.MINIDUMP_MEMORY64_LIST(directory.Location.Rva, self._file, True)
+		memory64_list_struct = MINIDUMP_MEMORY64_LIST(directory.Location.Rva, self._file, True)
 		current_disk_rva = memory64_list_struct.BaseRva
 		for range_start, range_size in memory_descriptors:
 			self._get_bytes_wrapper(range_start, range_size, current_disk_rva)
@@ -238,7 +238,7 @@ class minidump_writer:
 		self.write_directories()
 
 	def write_header(self):
-		self.header = minidump_strcuts.MINIDUMP_HEADER(0, self._file)
+		self.header = MINIDUMP_HEADER(0, self._file)
 		self.header.Signature = 0x504D444D # 'MDMP'
 		self.header.Version = 0xA0BAA793
 		self.header.NumberOfStreams = len(self.stream_to_handler)
@@ -256,7 +256,7 @@ class minidump_writer:
 		self._file.seek(current_file_offset)
 
 		for stream_type in self.stream_to_handler:
-			current_directory = minidump_strcuts.MINIDUMP_DIRECTORY(current_file_offset, self._file)
+			current_directory = MINIDUMP_DIRECTORY(current_file_offset, self._file)
 			current_directory.StreamType = stream_type
 			current_directory.write()
 			current_file_offset += current_directory.size()
@@ -279,15 +279,15 @@ class minidump_writer:
 	def _alloc_minidump_string(self, string_value):
 		string_encoded = string_value.encode("utf-16-le") + b"\x00\x00"
 
-		minidump_string = minidump_strcuts.MINIDUMP_STRING()
+		minidump_string = MINIDUMP_STRING()
 		minidump_string.Length = len(string_encoded)
 
 		return self._alloc_buffer(bytes(minidump_string) + string_encoded)
 
 	def write_directories(self):
 		for stream_index in range(self.header.NumberOfStreams):
-			directory_offset = self.header.StreamDirectoryRva + (stream_index) * minidump_strcuts.MINIDUMP_DIRECTORY.size()
-			directory = minidump_strcuts.MINIDUMP_DIRECTORY(directory_offset, self._file, True)
+			directory_offset = self.header.StreamDirectoryRva + (stream_index) * MINIDUMP_DIRECTORY.size()
+			directory = MINIDUMP_DIRECTORY(directory_offset, self._file, True)
 			info_getter, translator, post_translator = self.stream_to_handler[directory.StreamType]
 			info = info_getter()
 			location = translator(info)
