@@ -1,5 +1,3 @@
-
-
 try:
     from setuptools import setup, Command
 except ImportError as excp:
@@ -8,7 +6,7 @@ except ImportError as excp:
 
 setup(name='minidumpwriter',
       version='0.9',
-      description='Python Distribution Utilities',
+      description='Minidump writer',
       author='Paul Kermann',
       author_email='paulkermann@tutanota.com',
       url='https://github.com/paulkermann/MinidumpWriter',
