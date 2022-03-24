@@ -72,6 +72,13 @@ class ProcessorArchitecture(enum.IntFlag):
 	PROCESSOR_ARCHITECTURE_INTEL = 0
 	PROCESSOR_ARCHITECTURE_UNKNOWN = 0xffff
 
+arch_to_ProcessorArchitecture = {
+	"amd64": ProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64.value,
+	"arm": ProcessorArchitecture.PROCESSOR_ARCHITECTURE_ARM.value,
+	"ia64": ProcessorArchitecture.PROCESSOR_ARCHITECTURE_IA64.value,
+	"intel": ProcessorArchitecture.PROCESSOR_ARCHITECTURE_INTEL.value,
+}
+
 class ProcessorLevel(enum.IntFlag):
 	INTEL_80386 = 3
 	INTEL_80486 = 4

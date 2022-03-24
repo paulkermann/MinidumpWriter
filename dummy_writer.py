@@ -7,15 +7,12 @@ class dummy_writer(minidump_provider, minidump_writer):
 
 	def get_system_info(self):
 		to_return = {}
-		to_return["ProcessorArchitecture"] = ProcessorArchitecture.PROCESSOR_ARCHITECTURE_INTEL.value
+		to_return["ProcessorArchitecture"] = "intel"
 		to_return["ProcessorLevel"] = ProcessorLevel.INTEL_PRO_OR_PENTIUM_2.value
 		to_return["ProcessorRevision"] = 0x5E03
 		to_return["MajorVersion"] = 0xa
 		to_return["MinorVersion"] = 0
 		to_return["BuildNumber"] = 0x295A
-		to_return["NumberOfProcessors"] = 2
-		to_return["ProductType"] = ProductType.VER_NT_WORKSTATION.value
-		to_return["PlatformId"] = PlatformId.VER_PLATFORM_WIN32_NT.value
 
 		return to_return
 
@@ -37,6 +34,12 @@ class dummy_writer(minidump_provider, minidump_writer):
 			thread_info["Teb"] = 0x400 + (0x400 * i)
 			thread_info["Priority"] = 40
 			thread_info["PriorityClass"] = 40
+			if i == 1:
+				context = {}
+				context["Eip"] = 0x100
+				context["Eax"] = 0x1337
+				thread_info["Context"] = context
+
 			threads[4 + (i * 4)] = thread_info
 
 		return threads

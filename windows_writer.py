@@ -12,9 +12,9 @@ class windows_writer(minidump_provider, minidump_writer):
 		to_return = {}
 		current_system_version = windows.system.get_version()
 		if windows.system.bitness == 32:
-			to_return["ProcessorArchitecture"] = ProcessorArchitecture.PROCESSOR_ARCHITECTURE_INTEL.value
+			to_return["ProcessorArchitecture"] = "intel"
 		else:
-			to_return["ProcessorArchitecture"] = ProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64.value
+			to_return["ProcessorArchitecture"] = "amd64"
 		to_return["ProcessorLevel"] = ProcessorLevel.INTEL_PRO_OR_PENTIUM_2.value
 		to_return["ProcessorRevision"] = 0x5E03
 		to_return["MajorVersion"] = current_system_version.dwMajorVersion

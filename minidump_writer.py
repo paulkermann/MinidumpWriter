@@ -17,6 +17,16 @@ class minidump_provider(ABC):
 	def get_system_info(self):
 		"""
 		get generic system information
+
+		ProcessorArchitecture - one of (amd64, arm, ia64, intel)
+		ProcessorLevel - Optional, default to INTEL_PRO_OR_PENTIUM_2 from ProcessorLevel enum
+		ProcessorRevision - Optional, default to const 0x5E03
+		MajorVersion
+		MinorVersion
+		BuildNumber
+		NumberOfProcessors - Optional.  defaults to 1
+		ProductType - Optional ProductType enum
+		PlatformId - Optional PlatformId enum
 		"""
 
 	def get_modules(self):
@@ -98,19 +108,20 @@ class minidump_writer:
 	def get_system_info_translator(self, system_info):
 		allocated_system_info_rva = self._alloc(MINIDUMP_SYSTEM_INFO.size())
 		system_info_struct = MINIDUMP_SYSTEM_INFO(allocated_system_info_rva, self._file)
-		system_info_struct.ProcessorArchitecture = system_info["ProcessorArchitecture"]
+		system_info_struct.ProcessorArchitecture = arch_to_ProcessorArchitecture.get(system_info["ProcessorArchitecture"], ProcessorArchitecture.PROCESSOR_ARCHITECTURE_UNKNOWN.value)
+
 		self.arch = system_info_struct.ProcessorArchitecture
-		if system_info_struct.ProcessorArchitecture in [ProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64, ProcessorArchitecture.PROCESSOR_ARCHITECTURE_IA64]:
+		if system_info_struct.ProcessorArchitecture in [ProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64.value, ProcessorArchitecture.PROCESSOR_ARCHITECTURE_IA64.value]:
 			self.bitness = 64
 
-		system_info_struct.ProcessorLevel = system_info["ProcessorLevel"]
-		system_info_struct.ProcessorRevision = system_info["ProcessorRevision"]
+		system_info_struct.ProcessorLevel = system_info.get("ProcessorLevel", ProcessorLevel.INTEL_PRO_OR_PENTIUM_2.value)
+		system_info_struct.ProcessorRevision = system_info.get("ProcessorRevision", 0x5E03)
 		system_info_struct.MajorVersion = system_info["MajorVersion"]
 		system_info_struct.MinorVersion = system_info["MinorVersion"]
 		system_info_struct.BuildNumber = system_info["BuildNumber"]
-		system_info_struct.NumberOfProcessors = system_info["NumberOfProcessors"]
-		system_info_struct.ProductType = system_info["ProductType"]
-		system_info_struct.PlatformId = system_info["PlatformId"]
+		system_info_struct.NumberOfProcessors = system_info.get("NumberOfProcessors", 1)
+		system_info_struct.ProductType = system_info.get("ProductType", ProductType.VER_NT_WORKSTATION.value)
+		system_info_struct.PlatformId = system_info.get("PlatformId", PlatformId.VER_PLATFORM_WIN32_NT.value)
 		system_info_struct.write()
 
 		location = MINIDUMP_LOCATION_DESCRIPTOR()
