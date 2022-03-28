@@ -44,14 +44,32 @@ class dummy_writer(minidump_provider, minidump_writer):
 
 		return threads
 
+	def get_memory_info(self):
+		memory_info = []
+		info = {}
+		info["BaseAddress"] = 0x10000
+		info["RegionSize"] = 0x1000
+		info["Protect"] = "r-x"
+
+		memory_info.append(info)
+
+		info = {}
+		info["BaseAddress"] = 0xff0000
+		info["RegionSize"] = 0x1000000
+		info["Protect"] = "rwx"
+		info["Type"] = "Mapped"
+		memory_info.append(info)
+
+		return memory_info
+
 	def get_memory_descriptors(self):
 		memory_descriptors_arr = []
-		memory_descriptors_arr.append((0x10000, 0x300))
-		memory_descriptors_arr.append((0x500000, 0x5000))
+		memory_descriptors_arr.append((0x10000, 0x300, None))
+		memory_descriptors_arr.append((0x500000, 0x5000, None))
 
 		return memory_descriptors_arr
 
-	def get_bytes(self, address, size):
+	def get_bytes(self, address, size, info):
 		if address == 0x10000:
 			return size * b"\x01"
 

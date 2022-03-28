@@ -3,6 +3,25 @@ from minidump_writer import minidump_provider, minidump_writer
 import windows
 import sys
 
+def windows_protect_to_string(protect):
+	to_return = ""
+	if "READ" in str(protect):
+		to_return += "r"
+	else:
+		to_return += "-"
+
+	if "WRITE" in str(protect):
+		to_return += "w"
+	else:
+		to_return += "-"
+
+	if "EXECUTE" in str(protect):
+		to_return += "x"
+	else:
+		to_return += "-"
+
+	return to_return	
+
 class windows_writer(minidump_provider, minidump_writer):
 	def __init__(self, file, pid=0, *args, **kwargs):
 		self.process = windows.winobject.process.WinProcess(pid=pid)
@@ -72,6 +91,37 @@ class windows_writer(minidump_provider, minidump_writer):
 
 		return threads
 
+	def get_memory_info(self):
+		memory_info = []
+		for basic_info in self.process.memory_state():
+			to_skip = False
+			skip_states = [0x2000, 0x10000] # skip free and reserved
+			for skip_state in skip_states:
+				if basic_info.State & skip_state == skip_state:
+					to_skip = True
+					break
+
+			if to_skip:
+				continue
+
+			info = {}
+			info["BaseAddress"] = basic_info.BaseAddress
+			info["RegionSize"] = basic_info.RegionSize
+			info["AllocationBase"] = basic_info.AllocationBase
+			info["Protect"] = windows_protect_to_string(basic_info.Protect)
+			info["AllocationProtect"] = windows_protect_to_string(basic_info.AllocationProtect)
+			
+			if "PRIVATE" in str(basic_info.Type):
+				info["Type"] = "Private"
+			elif "MAPPED" in str(basic_info.Type):
+				info["Type"] = "Mapped"
+			else:
+				info["Type"] = "Image"
+
+			memory_info.append(info)
+
+		return memory_info
+
 	def get_memory_descriptors(self):
 		memory_descriptors_arr = []
 
@@ -86,11 +136,11 @@ class windows_writer(minidump_provider, minidump_writer):
 			if to_skip:
 				continue
 			
-			memory_descriptors_arr.append((basic_info.BaseAddress, basic_info.RegionSize))
+			memory_descriptors_arr.append((basic_info.BaseAddress, basic_info.RegionSize, basic_info))
 
 		return memory_descriptors_arr
 
-	def get_bytes(self, address, size):
+	def get_bytes(self, address, size, info):
 		try:
 			return self.process.read_memory(address, size)
 		except:

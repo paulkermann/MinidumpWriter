@@ -182,6 +182,23 @@ class MINIDUMP_MEMORY_INFO(generic_file_structure, Structure):
 		("__alignment2", ULONG32),
 	]
 
+string_protect_to_MemoryProtection = {
+	"r--": 0x02,
+	"-w-": 0x04, # Actually PAGE_READWRITE
+	"--x": 0x10,
+	"rw-": 0x04,
+	"r-x": 0x20,
+	"-wx": 0x40, # Actually PAGE_EXECUTE_READWRITE
+	"rwx": 0x40,
+	"---": 0x01,
+}
+
+string_type_to_MemoryType = {
+	"Private": 0x20000,
+	"Mapped": 0x40000,
+	"Image": 0x1000000,
+}
+
 class MINIDUMP_MEMORY64_LIST(generic_file_structure, Structure):
 	_fields_ = [
 		("NumberOfMemoryRanges", ULONG64),

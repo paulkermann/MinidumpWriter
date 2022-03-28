@@ -41,28 +41,44 @@ class minidump_provider(ABC):
 
 		return []
 
+	def get_memory_info(self):
+		"""
+		get memory info array of dict:
+
+		BaseAddress - default to 0
+		AllocationBase - default to 0, if AllocationBase is 0 then BaseAddress is used
+		AllocationProtect - in formats of `rwx`, default to rwx
+		RegionSize - default to 0
+		Protect - in format of `rwx`, default to rwx
+		Type - "Mapped, Private or Image", defaults to Private
+		"""
+
+		return []
+
 	def get_threads(self):
 		"""
-		TODO: add support for get thread context
 		get thread information as a dict of thread_id and members
 
 		ThreadId :{ PriorityClass - Optional
 					Priority - Optional
 					Teb - Optional
+					Context - Optional -> Dict of registers ({"Rip": 1})
 		}
 		"""
+
 		return {}
 
 	def get_memory_descriptors(self):
 		"""
-		get (range_start, range_start) array of valid memory in the dump
+		get (range_start, range_start, info) array of valid memory in the dump
 		"""
 		return []
 
 	@abstractmethod
-	def get_bytes(self, address, size):
+	def get_bytes(self, address, size, info):
 		"""
 		reads addresses that were received from `get_memory_descriptors`
+		info is used to pass information to the get_bytes function so you can calculate some logic once
 		"""
 
 def _context_from_provider_context(context, arch):
@@ -93,13 +109,19 @@ class minidump_writer:
 		self._file = file
 
 		self.bitness = 32
+		self.whole_range_size = False
+
 		self.chunk_size = chunk_size
+		if self.chunk_size == -1:
+			self.whole_range_size = True
+
 		# TODO: support more streams types: MemoryInfoListStream
 		# translators translate results to the MINIDUMP format struct
 		self.stream_to_handler = OrderedDict()
 		self.stream_to_handler[MINIDUMP_STREAM_TYPE.SystemInfoStream.value] = (self.get_system_info, self.get_system_info_translator, None)
 		self.stream_to_handler[MINIDUMP_STREAM_TYPE.ModuleListStream.value] = (self.get_modules, self.get_modules_translator, None)
 		self.stream_to_handler[MINIDUMP_STREAM_TYPE.ThreadListStream.value] = (self.get_threads, self.get_threads_translator, None)
+		self.stream_to_handler[MINIDUMP_STREAM_TYPE.MemoryInfoListStream.value] = (self.get_memory_info, self.get_memory_info_translator, None)
 
 		# Put this last for clarity
 		self.stream_to_handler[MINIDUMP_STREAM_TYPE.Memory64ListStream.value] = (self.get_memory_descriptors, self.get_memory_descriptors_translator, self.memory_fetcher)
@@ -129,6 +151,41 @@ class minidump_writer:
 		location.Rva = allocated_system_info_rva
 
 		return location
+
+	def get_memory_info_translator(self, memory_info):
+		size_needed_for_info = MINIDUMP_MEMORY_INFO_LIST.size() + len(memory_info) * MINIDUMP_MEMORY_INFO.size()
+		memory_info_list_location = self._alloc(size_needed_for_info)
+
+		memory_info_list_struct = MINIDUMP_MEMORY_INFO_LIST(memory_info_list_location, self._file)
+		memory_info_list_struct.SizeOfHeader = memory_info_list_struct.size()
+		memory_info_list_struct.SizeOfEntry = MINIDUMP_MEMORY_INFO.size()
+		memory_info_list_struct.NumberOfEntries = len(memory_info)
+		memory_info_list_struct.write()
+
+		for memory_info_index, current_memory_info in enumerate(memory_info):
+			memory_info_location = memory_info_list_location + MINIDUMP_MEMORY_INFO_LIST.size() + (memory_info_index * MINIDUMP_MEMORY_INFO.size())
+			memory_info_struct = MINIDUMP_MEMORY_INFO(memory_info_location, self._file)
+
+			memory_info_struct.BaseAddress = current_memory_info.get("BaseAddress", 0)
+			memory_info_struct.AllocationBase = current_memory_info.get("AllocationBase", 0)
+			if memory_info_struct.AllocationBase == 0:
+				memory_info_struct.AllocationBase = memory_info_struct.BaseAddress
+
+			memory_info_struct.AllocationProtect = string_protect_to_MemoryProtection[current_memory_info.get("AllocationProtect", "rwx")]
+			memory_info_struct.RegionSize = current_memory_info.get("RegionSize", 0)
+			memory_info_struct.State = 0x1000 # MEM_COMMIT
+			memory_info_struct.Protect = string_protect_to_MemoryProtection[current_memory_info.get("Protect", "rwx")]
+			memory_info_struct.Type = string_type_to_MemoryType[current_memory_info.get("Type", "Private")]
+
+			memory_info_struct.write()
+
+
+		location = MINIDUMP_LOCATION_DESCRIPTOR()
+		location.DataSize = size_needed_for_info
+		location.Rva = memory_info_list_location
+
+		return location
+
 
 	def get_threads_translator(self, threads):
 		size_needed_for_info = MINIDUMP_THREAD_LIST.size() + (MINIDUMP_THREAD.size() * len(threads.keys()))
@@ -204,7 +261,7 @@ class minidump_writer:
 			descriptor_location = memory_list_location + MINIDUMP_MEMORY64_LIST.size() + (range_index * MINIDUMP_MEMORY_DESCRIPTOR64.size())
 			descriptor_struct = MINIDUMP_MEMORY_DESCRIPTOR64(descriptor_location, self._file)
 
-			range_start, range_size = descriptor
+			range_start, range_size, _ = descriptor
 			total_size_for_memory += range_size
 
 			descriptor_struct.StartOfMemoryRange = range_start
@@ -225,15 +282,19 @@ class minidump_writer:
 	def memory_fetcher(self, memory_descriptors, directory):
 		memory64_list_struct = MINIDUMP_MEMORY64_LIST(directory.Location.Rva, self._file, True)
 		current_disk_rva = memory64_list_struct.BaseRva
-		for range_start, range_size in memory_descriptors:
-			self._get_bytes_wrapper(range_start, range_size, current_disk_rva)
+		for range_start, range_size, info in memory_descriptors:
+			self._get_bytes_wrapper(range_start, range_size, info, current_disk_rva)
 			current_disk_rva += range_size
 			
-	def _get_bytes_wrapper(self, range_start, range_size, disk_rva):
+	def _get_bytes_wrapper(self, range_start, range_size, info, disk_rva):
 		bytes_written = 0
 		while bytes_written < range_size:
-			amount_bytes_to_read = min(self.chunk_size, range_size - bytes_written)
-			buffer = self.get_bytes(range_start + bytes_written, amount_bytes_to_read)
+			chunk_size = self.chunk_size
+			if self.whole_range_size:
+				chunk_size = range_size
+
+			amount_bytes_to_read = min(chunk_size, range_size - bytes_written)
+			buffer = self.get_bytes(range_start + bytes_written, amount_bytes_to_read, info)
 
 			self._file.seek(disk_rva)
 			self._file.write(buffer)
