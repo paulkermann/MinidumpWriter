@@ -45,12 +45,12 @@ class minidump_provider(ABC):
 		"""
 		get memory info array of dict:
 
-		BaseAddress - default to 0
-		AllocationBase - default to 0, if AllocationBase is 0 then BaseAddress is used
-		AllocationProtect - in formats of `rwx`, default to rwx
-		RegionSize - default to 0
-		Protect - in format of `rwx`, default to rwx
-		Type - "Mapped, Private or Image", defaults to Private
+		BaseAddress - Optional, default to 0
+		AllocationBase - Optional, default to 0, if AllocationBase is 0 then BaseAddress is used
+		AllocationProtect
+		Protect
+		RegionSize - Optional, default to 0
+		Type - Optional, "Mapped, Private or Image", defaults to Private
 		"""
 
 		return []
@@ -170,14 +170,21 @@ class minidump_writer:
 			if memory_info_struct.AllocationBase == 0:
 				memory_info_struct.AllocationBase = memory_info_struct.BaseAddress
 
-			memory_info_struct.AllocationProtect = string_protect_to_MemoryProtection[current_memory_info.get("AllocationProtect", "rwx")]
+			if type(current_memory_info["AllocationProtect"]) == int:
+				memory_info_struct.AllocationProtect = current_memory_info["AllocationProtect"]
+			else:
+				memory_info_struct.AllocationProtect = string_protect_to_MemoryProtection[current_memory_info.get("AllocationProtect", "rwx")]
+			
+			if type(current_memory_info["Protect"]) == int:
+				memory_info_struct.Protect = current_memory_info["Protect"]
+			else:
+				memory_info_struct.Protect = string_protect_to_MemoryProtection[current_memory_info.get("Protect", "rwx")]
+
 			memory_info_struct.RegionSize = current_memory_info.get("RegionSize", 0)
 			memory_info_struct.State = 0x1000 # MEM_COMMIT
-			memory_info_struct.Protect = string_protect_to_MemoryProtection[current_memory_info.get("Protect", "rwx")]
 			memory_info_struct.Type = string_type_to_MemoryType[current_memory_info.get("Type", "Private")]
 
 			memory_info_struct.write()
-
 
 		location = MINIDUMP_LOCATION_DESCRIPTOR()
 		location.DataSize = size_needed_for_info
