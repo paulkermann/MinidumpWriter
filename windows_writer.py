@@ -108,7 +108,7 @@ class windows_writer(minidump_provider, minidump_writer):
 			info["BaseAddress"] = basic_info.BaseAddress
 			info["RegionSize"] = basic_info.RegionSize
 			info["AllocationBase"] = basic_info.AllocationBase
-			info["Protect"] = windows_protect_to_string(basic_info.Protect)
+			info["Protect"] = int(basic_info.Protect)
 			info["AllocationProtect"] = windows_protect_to_string(basic_info.AllocationProtect)
 			
 			if "PRIVATE" in str(basic_info.Type):
