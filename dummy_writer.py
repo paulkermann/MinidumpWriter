@@ -50,6 +50,7 @@ class dummy_writer(minidump_provider, minidump_writer):
 		info["BaseAddress"] = 0x10000
 		info["RegionSize"] = 0x1000
 		info["Protect"] = "r-x"
+		info["AllocationProtect"] = "r-x"
 
 		memory_info.append(info)
 
@@ -57,6 +58,7 @@ class dummy_writer(minidump_provider, minidump_writer):
 		info["BaseAddress"] = 0xff0000
 		info["RegionSize"] = 0x1000000
 		info["Protect"] = "rwx"
+		info["AllocationProtect"] = "rwx"
 		info["Type"] = "Mapped"
 		memory_info.append(info)
 
