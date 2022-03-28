@@ -115,7 +115,6 @@ class minidump_writer:
 		if self.chunk_size == -1:
 			self.whole_range_size = True
 
-		# TODO: support more streams types: MemoryInfoListStream
 		# translators translate results to the MINIDUMP format struct
 		self.stream_to_handler = OrderedDict()
 		self.stream_to_handler[MINIDUMP_STREAM_TYPE.SystemInfoStream.value] = (self.get_system_info, self.get_system_info_translator, None)
@@ -320,6 +319,9 @@ class minidump_writer:
 		if MINIDUMP_STREAM_TYPE.Memory64ListStream.value in self.stream_to_handler:
 			self.header.Flags |= MINIDUMP_TYPE.MiniDumpWithFullMemory
 			self.header.Flags |= MINIDUMP_TYPE.MiniDumpIgnoreInaccessibleMemory
+
+		if MINIDUMP_STREAM_TYPE.MemoryInfoListStream.value in self.stream_to_handler:
+			self.header.Flags |= MINIDUMP_TYPE.MiniDumpWithFullMemoryInfo
 
 		self.header.write()
 
