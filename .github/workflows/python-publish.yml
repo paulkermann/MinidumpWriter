@@ -30,7 +30,7 @@ jobs:
     - name: Build package
       run: | 
         python -m build
-        setup_version=`git tag -a v$(python setup.py --version)`
+        setup_version=`python setup.py --version`
         export SETUP_VERSION=$setup_version
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@master
