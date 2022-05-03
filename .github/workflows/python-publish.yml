@@ -9,9 +9,9 @@
 name: Upload Python Package
 
 on:
-  push:
-    branches:
-      - main
+  create:
+    tags:
+      - v*
 
 jobs:
   deploy:
@@ -30,21 +30,19 @@ jobs:
     - name: Build package
       run: | 
         python -m build
-        setup_version=`python setup.py --version`
-        export SETUP_VERSION=$setup_version
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@master
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
+        skip_existing: true
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SETUP_VERSION: ${{ env.SETUP_VERSION }}
       with:
-        tag_name: ${{ env.SETUP_VERSION }}
-        release_name: Minidump Writer v${{ env.SETUP_VERSION }}
+        tag_name: ${{ github.ref }}
+        release_name: Minidump Writer v${{ github.ref }}
         draft: false
         prerelease: false
