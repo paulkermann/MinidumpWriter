@@ -5,7 +5,7 @@ except ImportError as excp:
 
 
 setup(name='minidumpwriter',
-      version='0.971',
+      version='0.975',
       description='Minidump writer',
       author='Paul Kermann',
       author_email='paulkermann@tutanota.com',
