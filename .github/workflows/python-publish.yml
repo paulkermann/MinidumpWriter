@@ -42,6 +42,7 @@ jobs:
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SETUP_VERSION: ${{ env.SETUP_VERSION }}
       with:
         tag_name: ${{ env.SETUP_VERSION }}
         release_name: Minidump Writer v${{ env.SETUP_VERSION }}
