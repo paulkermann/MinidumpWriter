@@ -170,15 +170,15 @@ class minidump_writer:
 			if memory_info_struct.AllocationBase == 0:
 				memory_info_struct.AllocationBase = memory_info_struct.BaseAddress
 
-			if type(current_memory_info["AllocationProtect"]) == int:
-				memory_info_struct.AllocationProtect = current_memory_info["AllocationProtect"]
-			else:
+			if type(current_memory_info["AllocationProtect"]) == str:
 				memory_info_struct.AllocationProtect = string_protect_to_MemoryProtection[current_memory_info.get("AllocationProtect", "rwx")]
-			
-			if type(current_memory_info["Protect"]) == int:
-				memory_info_struct.Protect = current_memory_info["Protect"]
 			else:
+				memory_info_struct.AllocationProtect = current_memory_info["AllocationProtect"]
+				
+			if type(current_memory_info["Protect"]) == str:
 				memory_info_struct.Protect = string_protect_to_MemoryProtection[current_memory_info.get("Protect", "rwx")]
+			else:
+				memory_info_struct.Protect = current_memory_info["Protect"]
 
 			memory_info_struct.RegionSize = current_memory_info.get("RegionSize", 0)
 			memory_info_struct.State = 0x1000 # MEM_COMMIT
