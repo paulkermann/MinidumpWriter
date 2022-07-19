@@ -14,7 +14,7 @@ except Exception:
     pass
 
 setup(name='minidumpwriter',
-      version='0.98',
+      version='0.981',
       description='Minidump writer',
       long_description=long_description,
       long_description_content_type='text/markdown',
