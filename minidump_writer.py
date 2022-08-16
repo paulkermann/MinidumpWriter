@@ -143,6 +143,7 @@ class minidump_writer:
 		system_info_struct.NumberOfProcessors = system_info.get("NumberOfProcessors", 1)
 		system_info_struct.ProductType = system_info.get("ProductType", ProductType.VER_NT_WORKSTATION.value)
 		system_info_struct.PlatformId = system_info.get("PlatformId", PlatformId.VER_PLATFORM_WIN32_NT.value)
+		system_info_struct.CSDVersionRva = self._alloc_minidump_string(system_info.get("CSDVersion", ""))
 		system_info_struct.write()
 
 		location = MINIDUMP_LOCATION_DESCRIPTOR()
